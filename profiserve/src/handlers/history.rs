@@ -31,9 +31,17 @@ pub async fn create_historical_data(
     let mut historical_data: MutexGuard<HashMap<String, Vec<HistoricalDataPoint>>> = state.historical_data.lock().unwrap();
     let ticker: String = ticker.to_uppercase();
 
-    historical_data.entry(ticker)
-        .or_insert_with(Vec::<HistoricalDataPoint>::new)
-        .push(data_point.clone());
+    let data_points = historical_data.entry(ticker)
+        .or_insert_with(Vec::<HistoricalDataPoint>::new);
+    
+    // Check if this date already exists
+    if data_points.iter().any(|dp| dp.date == data_point.date) {
+        // Date already exists, return OK without adding duplicate
+        return (StatusCode::OK, Json(data_point));
+    }
+    
+    // Add the new data point
+    data_points.push(data_point.clone());
     (StatusCode::CREATED, Json(data_point))
 }
 
